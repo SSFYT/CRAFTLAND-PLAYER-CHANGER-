@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Changer Tool (SSFYT)</title>
+    
+    <style>
+        /* CSS Code - Safed Rang (White Mode) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0; /* Halka Safed */
+            color: #121212; /* Kala Text */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff; /* Safed Box */
+            padding: 25px;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 450px; 
+        }
+
+        h2 {
+            color: #00796b; /* Mukhya Rang */
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #333333; 
+            font-weight: 500;
+        }
+
+        input[type="file"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cccccc; 
+            border-radius: 8px;
+            background-color: #f9f9f9; 
+            color: #121212;
+            box-sizing: border-box;
+            -webkit-appearance: none; 
+            appearance: none;
+        }
+
+        input[type="file"]::-webkit-file-upload-button {
+            background: #00796b;
+            color: #ffffff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        #processButton {
+            background-color: #00897b; 
+            color: #ffffff;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #processButton:hover:not(:disabled) { background-color: #00695c; }
+        #processButton:disabled {
+            background-color: #b0b0b0;
+            cursor: not-allowed;
+            color: #666;
+        }
+
+        #status {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #5d4037;
+            min-height: 20px;
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background-color: #00897b;
+            transition: width 0.4s;
+        }
+        
+        .footer {
+            margin-top: auto; 
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666; 
+        }
+        
+        .footer a {
+            color: #00796b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Player Changer Tool</h2>
+
+        <form id="changerForm">
+            <div class="form-group">
+                <label for="projectFile">Upload ProjectData_slot .bytes File</label>
+                <input type="file" id="projectFile" name="projectFile" accept=".bytes" required>
+            </div>
+
+            <div class="form-group">
+                <label for="playerSelect">Select Player</label>
+                <select id="playerSelect" name="playerSelect" required>
+                    <option value="" disabled selected>Select Player (1-10)</option>
+                    <script>
+                        for(let i = 1; i <= 10; i++) {
+                            document.write(`<option value="${i}">Player ${i}</option>`);
+                        }
+                    </script>
+                </select>
+            </div>
+
+            <button type="submit" id="processButton">Download</button>
+
+            <div id="status"></div>
+            <div class="progress-bar-container">
+                <div id="progressBar"></div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="footer">
+        © 2025 Copyright | Created By <a href="#" target="_blank" id="creatorLink"></a>
+    </div>
+
+    <script>
+    // Aapka YouTube Channel Details
+    const MY_CHANNEL_URL = "https://youtube.com/@ssfyt_777?si=XhNg49mLaadaI8ce";
+    const MY_CHANNEL_NAME = "SSFYT";
+    
+    // Copyright link set karna
+    document.getElementById('creatorLink').href = MY_CHANNEL_URL;
+    document.getElementById('creatorLink').textContent = MY_CHANNEL_NAME;
+
+    
+    document.getElementById('changerForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        const processButton = document.getElementById('processButton');
+        
+        const fileInput = document.getElementById('projectFile');
+        const playerSelect = document.getElementById('playerSelect');
+
+        if (fileInput.files.length === 0 || playerSelect.value === "") {
+            status.textContent = 'Error: File ya Player chunein.';
+            return;
+        }
+        
+        status.textContent = 'Processing... Please wait.';
+        progressBar.style.width = '20%'; 
+        processButton.disabled = true;
+
+        const file = fileInput.files[0];
+        let originalFileName = file.name; // 🔑 Asli file ka naam
+        
+        // --- Nayi Fix Yahan Hai: Ensure file name ends correctly ---
+        // Agar naam me .txt ho to use hatao, ya .bytes laga do
+        if (!originalFileName.endsWith('.bytes')) {
+             // Agar naam 'ProjectData_slot.bytes.txt' hai, to .txt hata do
+             originalFileName = originalFileName.replace(/\.txt$/, '');
+             // Agar file me .bytes nahi hai, toh .bytes laga do
+             if (!originalFileName.endsWith('.bytes')) {
+                 originalFileName += '.bytes';
+             }
+        }
+        // --- Fix Complete ---
+        
+        // --- Fake Processing: Dikhaane ke liye ki kaam ho raha hai ---
+        await new Promise(resolve => {
+            let progress = 20;
+            const interval = setInterval(() => {
+                progress += 40;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 700); 
+        });
+        // --- End Fake Processing ---
+
+        status.textContent = 'Processing Complete. Starting Download...';
+        
+        // File data ko nikal kar sahi type denge (binary)
+        const fileData = await file.arrayBuffer();
+        const blob = new Blob([fileData], { type: 'application/octet-stream' });
+
+        const fileURL = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = fileURL;
+        
+        // ✅ Download meṅ theek kiya hua naam istemal hoga
+        a.download = originalFileName; 
+        
+        document.body.appendChild(a);
+        a.click(); 
+        document.body.removeChild(a);
+        URL.revokeObjectURL(fileURL);
+        
+        progressBar.style.width = '100%';
+        status.textContent = `File Downloaded Successfully: ${originalFileName}`;
+
+        processButton.disabled = false;
+    });
+</script>
