@@ -173,6 +173,10 @@
     document.getElementById('creatorLink').textContent = MY_CHANNEL_NAME;
 
     
+    // ✅ Yahi FINAL URL hai!
+    const API_URL = 'https://craftland-player-changer.onrender.com/api/change_player'; 
+
+    
     document.getElementById('changerForm').addEventListener('submit', async function(event) {
         event.preventDefault();
 
@@ -188,60 +192,68 @@
             return;
         }
         
-        status.textContent = 'Processing... Please wait.';
-        progressBar.style.width = '20%'; 
+        status.textContent = 'Uploading and Processing...';
+        progressBar.style.width = '30%'; 
         processButton.disabled = true;
 
         const file = fileInput.files[0];
-        let originalFileName = file.name; // 🔑 Asli file ka naam
+        const selectedPlayer = playerSelect.value;
+        const originalFileName = file.name;
         
-        // --- Nayi Fix Yahan Hai: Ensure file name ends correctly ---
-        // Agar naam me .txt ho to use hatao, ya .bytes laga do
-        if (!originalFileName.endsWith('.bytes')) {
-             // Agar naam 'ProjectData_slot.bytes.txt' hai, to .txt hata do
-             originalFileName = originalFileName.replace(/\.txt$/, '');
-             // Agar file me .bytes nahi hai, toh .bytes laga do
-             if (!originalFileName.endsWith('.bytes')) {
-                 originalFileName += '.bytes';
-             }
-        }
-        // --- Fix Complete ---
-        
-        // --- Fake Processing: Dikhaane ke liye ki kaam ho raha hai ---
-        await new Promise(resolve => {
-            let progress = 20;
-            const interval = setInterval(() => {
-                progress += 40;
-                progressBar.style.width = progress + '%';
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    resolve();
+        // --- 🔑 Asal file bhejne ka code ---
+        const formData = new FormData();
+        formData.append('projectFile', file);
+        formData.append('playerSelect', selectedPlayer);
+        // Asli naam API ko bhej rahe hain taaki download meṅ wohi naam aaye.
+        formData.append('original_filename', originalFileName); 
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: formData,
+            });
+            
+            progressBar.style.width = '70%';
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Server error: ${response.status}.`;
+                try {
+                    // Agar server se JSON error aaya hai
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error || errorMessage;
+                } catch (e) {
+                    // Agar koi doosra server error aaya hai
+                    errorMessage = errorMessage + " Check Render logs.";
                 }
-            }, 700); 
-        });
-        // --- End Fake Processing ---
+                throw new Error(errorMessage);
+            }
 
-        status.textContent = 'Processing Complete. Starting Download...';
-        
-        // File data ko nikal kar sahi type denge (binary)
-        const fileData = await file.arrayBuffer();
-        const blob = new Blob([fileData], { type: 'application/octet-stream' });
+            // File data ko blob meṅ badlo
+            const blob = await response.blob();
+            
+            status.textContent = 'Processing Complete. Starting Download...';
+            
+            // Download shuru karna
+            const fileURL = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = fileURL;
+            a.download = originalFileName; 
+            
+            document.body.appendChild(a);
+            a.click(); 
+            document.body.removeChild(a);
+            URL.revokeObjectURL(fileURL);
 
-        const fileURL = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = fileURL;
-        
-        // ✅ Download meṅ theek kiya hua naam istemal hoga
-        a.download = originalFileName; 
-        
-        document.body.appendChild(a);
-        a.click(); 
-        document.body.removeChild(a);
-        URL.revokeObjectURL(fileURL);
-        
-        progressBar.style.width = '100%';
-        status.textContent = `File Downloaded Successfully: ${originalFileName}`;
+            progressBar.style.width = '100%';
+            status.textContent = `File Downloaded Successfully: ${originalFileName}`;
 
-        processButton.disabled = false;
+        } catch (error) {
+            status.textContent = `Error: ${error.message}. Please try again.`;
+            console.error(error);
+        } finally {
+            processButton.disabled = false;
+            progressBar.style.width = '0%';
+        }
     });
 </script>
